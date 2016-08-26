@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/8/trunk/TakaGUI/Services
+END
+GraphicsManager.cs
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/20/trunk/TakaGUI/Services/GraphicsManager.cs
+END
+GUIManager.cs
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/3/trunk/TakaGUI/Services/GUIManager.cs
+END
+KeyboardInput.cs
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/3/trunk/TakaGUI/Services/KeyboardInput.cs
+END
+ResourceManager.cs
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/3/trunk/TakaGUI/Services/ResourceManager.cs
+END
+Debug.cs
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/3/trunk/TakaGUI/Services/Debug.cs
+END
+MouseInput.cs
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/20/trunk/TakaGUI/Services/MouseInput.cs
+END
+CursorManager.cs
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/3/trunk/TakaGUI/Services/CursorManager.cs
+END

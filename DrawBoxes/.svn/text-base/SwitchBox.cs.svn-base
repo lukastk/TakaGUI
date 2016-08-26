@@ -1,0 +1,137 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Collections.ObjectModel;
+using TakaGUI.Services;
+
+namespace TakaGUI.DrawBoxes
+{
+	public class SwitchBox : SingleSlotBox
+	{
+		public delegate void HasSwitchedEventHandler(object sender, DrawBox newSelectedDrawBox);
+		public event HasSwitchedEventHandler HasSwitched;
+
+		Dictionary<string, DrawBox> drawBoxesWithKey = new Dictionary<string, DrawBox>();
+		public ReadOnlyDictionary<string, DrawBox> DrawBoxesWithKey;
+
+		public SwitchBox()
+		{
+			DrawBoxesWithKey = new ReadOnlyDictionary<string, DrawBox>(drawBoxesWithKey);
+		}
+
+		public DrawBox SelectedDrawBox
+		{
+			get;
+			private set;
+		}
+
+		public void Initialize()
+		{
+			base.BaseInitialize();
+		}
+
+		protected override void DrawBoxHasBeenAdded(DrawBox box, SlotBox.SlotHandler handler)
+		{
+			base.DrawBoxHasBeenAdded(box, handler);
+
+			SelectDrawBox(box);
+		}
+		protected override void DrawBoxHasBeenRemoved(DrawBox box, SlotBox.SlotHandler handler)
+		{
+			base.DrawBoxHasBeenRemoved(box, handler);
+
+			if (DrawBoxList.Count != 0)
+				SelectDrawBox(DrawBoxList[0]);
+
+			foreach (var pair in drawBoxesWithKey)
+			{
+				if (pair.Value == box)
+				{
+					drawBoxesWithKey.Remove(pair.Key);
+					break;
+				}
+			}
+		}
+
+		public void SelectDrawBox(DrawBox selected)
+		{
+			if (selected != null)
+			{
+				if (!DrawBoxList.Contains(selected))
+				{
+					Debug.AddExceptionInClass(this.GetType(), "SelectDrawBox", "Selected drawbox is not part of this container");
+					return;
+				}
+
+				SelectedDrawBox = selected;
+				selected.Activated = true;
+			}
+			else
+				SelectedDrawBox = null;
+
+			foreach (DrawBox box in DrawBoxList)
+			{
+				if (selected != box)
+					box.Activated = false;
+			}
+
+			if (oldSelected != SelectedDrawBox && HasSwitched != null)
+				HasSwitched(this, SelectedDrawBox);
+		}
+		public void SelectDrawBoxWithKey(string selectedKey)
+		{
+			SelectDrawBox(drawBoxesWithKey[selectedKey]);
+		}
+
+		public void SelectNone()
+		{
+			SelectDrawBox(null);
+
+			if (oldSelected != SelectedDrawBox && HasSwitched != null)
+				HasSwitched(this, SelectedDrawBox);
+		}
+
+		public void SelectNext()
+		{
+			int index = DrawBoxList.IndexOf(SelectedDrawBox);
+
+			index++;
+
+			if (index >= DrawBoxList.Count)
+				index = 0;
+
+			SelectedDrawBox = DrawBoxList[index];
+
+			if (oldSelected != SelectedDrawBox && HasSwitched != null)
+				HasSwitched(this, SelectedDrawBox);
+		}
+
+		public override ViewRect GetDefaultBoundaries(int newWidth, int newHeight)
+		{
+			return new ViewRect(RealX, RealY, newWidth, newHeight);
+		}
+
+		DrawBox oldSelected;
+		public override void Idle(Microsoft.Xna.Framework.GameTime gameTime)
+		{
+			base.Idle(gameTime);
+
+			SelectDrawBox(SelectedDrawBox);
+
+			oldSelected = SelectedDrawBox;
+		}
+
+		public override void Draw(Microsoft.Xna.Framework.GameTime gameTime, ViewRect viewRect)
+		{
+			base.Draw(gameTime, viewRect);
+		}
+
+		public void AddDrawBox(DrawBox drawBox, string key)
+		{
+			AddDrawBox(drawBox);
+
+			drawBoxesWithKey.Add(key, drawBox);
+		}
+	}
+}

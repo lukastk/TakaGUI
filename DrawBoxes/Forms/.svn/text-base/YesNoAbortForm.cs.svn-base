@@ -1,0 +1,92 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TakaGUI.Data;
+
+namespace TakaGUI.DrawBoxes.Forms
+{
+	public class YesNoAbortForm : Dialogue
+	{
+		public DialogResult DialogResult = DialogResult.NotFinished;
+
+		private YesNoAbortForm()
+		{
+		}
+
+		string text;
+		public static YesNoAbortForm ShowDialogue(Window window, string title, string _text, CloseEvent closeFunction = null, bool resizable = false, bool isDialog = true, string category = null, ISkinFile file = null)
+		{
+			var form = new YesNoAbortForm();
+			form.Initialize(closeFunction, title, resizable, isDialog, category, file);
+
+			form.text = _text;
+			form.Show(window);
+
+			return form;
+		}
+
+		public override void AddedToContainer()
+		{
+			base.AddedToContainer();
+
+			if (text == null)
+				text = "";
+
+			Label label = new Label(text);
+			label.Initialize();
+			AddDrawBox(label);
+			label.X = 3;
+			label.Y = 1;
+
+			ResizableButton yesButton = new ResizableButton();
+			yesButton.Initialize();
+			yesButton.Title = "Yes";
+			yesButton.FitToText();
+			AddDrawBox(yesButton);
+			Push.ToTheBottomSideOf(yesButton, label, 3, Push.VerticalAlign.Left);
+			yesButton.Click += yesButton_Click;
+
+			ResizableButton noButton = new ResizableButton();
+			noButton.Initialize();
+			noButton.Title = "No";
+			noButton.FitToText();
+			AddDrawBox(noButton);
+			Push.ToTheRightSideOf(noButton, yesButton, 3, Push.HorizontalAlign.Top);
+			noButton.Click += noButton_Click;
+
+			ResizableButton abortButton = new ResizableButton();
+			abortButton.Initialize();
+			abortButton.Title = "Abort";
+			abortButton.FitToText();
+			AddDrawBox(abortButton);
+			Push.ToTheRightSideOf(abortButton, noButton, 3, Push.HorizontalAlign.Top);
+			abortButton.Click += abortButton_Click;
+
+			Wrap();
+
+			UpdateSize();
+
+			X = (Parent.Width / 2) - (Width / 2);
+			Y = (Parent.Height / 2) - (Height / 2);
+		}
+
+		void yesButton_Click(object sender)
+		{
+			DialogResult = Forms.DialogResult.Yes;
+			Close();
+		}
+
+		void noButton_Click(object sender)
+		{
+			DialogResult = Forms.DialogResult.No;
+			Close();
+		}
+
+		void abortButton_Click(object sender)
+		{
+			DialogResult = Forms.DialogResult.Abort;
+			Close();
+		}
+	}
+}

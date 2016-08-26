@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TakaGUI", "TakaGUI.csproj", "{1FC11087-5C8A-4C0A-82A6-9244A988E1C3}"
+EndProject
+Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1FC11087-5C8A-4C0A-82A6-9244A988E1C3}.Debug|x86.ActiveCfg = Debug|x86
+		{1FC11087-5C8A-4C0A-82A6-9244A988E1C3}.Debug|x86.Build.0 = Debug|x86
+		{1FC11087-5C8A-4C0A-82A6-9244A988E1C3}.Release|x86.ActiveCfg = Release|x86
+		{1FC11087-5C8A-4C0A-82A6-9244A988E1C3}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

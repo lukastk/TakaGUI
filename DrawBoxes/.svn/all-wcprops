@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/3/trunk/TakaGUI/DrawBoxes
+END
+Button.cs
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Button.cs
+END
+ResizableButton.cs
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/ResizableButton.cs
+END
+DoubleField.cs
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/DoubleField.cs
+END
+Label.cs
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Label.cs
+END
+FileSelector.cs
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/FileSelector.cs
+END
+Slider.cs
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Slider.cs
+END
+Scrollbar.cs
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Scrollbar.cs
+END
+IconButton.cs
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/IconButton.cs
+END
+FpsMeter.cs
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/FpsMeter.cs
+END
+CheckBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/CheckBox.cs
+END
+TextField.cs
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/TextField.cs
+END
+MenuBar.cs
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/MenuBar.cs
+END
+SplitPanels.cs
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/SplitPanels.cs
+END
+Panel.cs
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/3/trunk/TakaGUI/DrawBoxes/Panel.cs
+END
+IntegerField.cs
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/IntegerField.cs
+END
+ColumnListBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/3/trunk/TakaGUI/DrawBoxes/ColumnListBox.cs
+END
+Console.cs
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Console.cs
+END
+GridPanel.cs
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/3/trunk/TakaGUI/DrawBoxes/GridPanel.cs
+END
+ComboBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/ComboBox.cs
+END
+TabContainer.cs
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/TabContainer.cs
+END
+TextureBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/19/trunk/TakaGUI/DrawBoxes/TextureBox.cs
+END
+SwitchBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/SwitchBox.cs
+END

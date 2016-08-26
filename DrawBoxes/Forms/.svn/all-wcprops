@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/3/trunk/TakaGUI/DrawBoxes/Forms
+END
+AlertForm.cs
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/AlertForm.cs
+END
+YesNoForm.cs
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/YesNoForm.cs
+END
+Form.cs
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/Form.cs
+END
+FileForm.cs
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/FileForm.cs
+END
+GridForm.cs
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/GridForm.cs
+END
+Dialogue.cs
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/Dialogue.cs
+END
+YesNoAbortForm.cs
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/YesNoAbortForm.cs
+END
+FieldBuilder.cs
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBoxes/Forms/FieldBuilder.cs
+END

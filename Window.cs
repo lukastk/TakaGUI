@@ -1,0 +1,189 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TakaGUI.Data;
+using Microsoft.Xna.Framework;
+using TakaGUI.Services;
+
+namespace TakaGUI
+{
+	public delegate void DrawDelegate(GameTime gameTime, ViewRect viewRect);
+
+	/// <summary>
+	/// Summary:
+	///		Windows are the containers that holds all drawboxes, they are in the top of the drawbox hiearchy.
+	///		No container holds a window. It basically treats a partition of the gamescreen as a "window" to
+	///		draw in.
+	/// </summary>
+	public class Window : SingleSlotBox
+	{
+		/// <summary>
+		/// The color that the window should clear the viewport with.
+		/// </summary>
+		public Color BackgroundColor = Color.Transparent;
+
+		/// <summary>
+		/// Every update loop the value is set to the return-value of CheckMouseOver().
+		/// </summary>
+		bool isUnderMouse;
+		/// <summary>
+		/// If true, then the window has focus. Overriden to return IsUnderMouse.
+		/// </summary>
+		public override bool HasFocus
+		{
+			get { return IsUnderMouse; }
+		}
+		/// <summary>
+		/// If true, the window is under the mouse. Overriden to return the private field isUnderMouse, which
+		/// is set by calling CheckMouseOver() every update loop. Because the Window does not have a
+		/// container it can't query it about whether it is under the mouse or not, that is why
+		/// the window has to calculate it itself.
+		/// </summary>
+		public override bool IsUnderMouse
+		{
+			get { return isUnderMouse; }
+		}
+
+		public override Window Parent
+		{
+			get
+			{
+				return this;
+			}
+			set
+			{
+			}
+		}
+
+		List<DrawDelegate> drawDelegates = new List<DrawDelegate>();
+
+		/// <summary>
+		/// Sets up the default position and sizes, which are to fill the entire screen. Also,
+		/// the window doesn't have a Init() function because it is BaseInitialize() is automatically
+		/// called in the constructor.
+		/// </summary>
+		public Window()
+		{
+			X = 0;
+			Y = 0;
+			Width = GraphicsManager.ScreenWidth;
+			Height = GraphicsManager.ScreenHeight;
+
+			base.BaseInitialize();
+		}
+
+		/// <summary>
+		/// Returns the default boundaries of the window, if the Width and Height would be
+		/// set to newWidth and newHeight.
+		/// </summary>
+		/// <param name="newWidth"></param>
+		/// <param name="newHeight"></param>
+		/// <returns></returns>
+		public override ViewRect GetDefaultBoundaries(int newWidth, int newHeight)
+		{
+			return new ViewRect(RealX, RealY, newWidth, newHeight);
+		}
+
+		/// <summary>
+		/// In addition to the normal SingleSlotBox.UpdateCursor() it also sets up the fields that
+		/// is normally handled by a drawbox's container. Like LocationOrigin and MasterBoundaries...
+		/// </summary>
+		/// <param name="gameTime"></param>
+		public override void Update(GameTime gameTime)
+		{
+			// Because Window doesn't have container, these fields has to be set by the window itself.
+			LocationOrigin = new Origin(0, 0);
+			Boundaries = new ViewRect(0, 0, GraphicsManager.ScreenWidth, GraphicsManager.ScreenHeight);
+			MasterBoundaries = Boundaries;
+
+			// The Window doesn't compete with others over the under-mouse privelege, so IsUnderMouse
+			// isn't set by a container.
+			isUnderMouse = CheckMouseOver();
+
+			base.Update(gameTime);
+		}
+
+		/// <summary>
+		/// Normally when you call a drawbox's DrawSprite method is suppoused to be called by its container,
+		/// but a Window does not have a container, which means that is has to be called from somewhere else.
+		/// DrawSprite(GameTime) calls the overriden DrawSprite(GameTime, ViewRect) method, providing the overidden method
+		/// with the a ViewRect boundary.
+		/// </summary>
+		/// <param name="gameTime"></param>
+		public void Draw(GameTime gameTime)
+		{
+			Draw(gameTime, new ViewRect(0, 0, GraphicsManager.ScreenWidth, GraphicsManager.ScreenHeight));
+		}
+
+		/// <summary>
+		/// Draws the window.
+		/// </summary>
+		/// <param name="gameTime"></param>
+		/// <param name="viewRect"></param>
+		public override void Draw(GameTime gameTime, ViewRect viewRect)
+		{
+			if (IsClosed || !IsInitialized || !Activated)
+				return;
+
+			if (!Hidden)
+			{
+				ViewRect windowRect = viewRect.AddGet(new ViewRect(RealX, RealY, Width, Height));
+				windowRect.Add(GetDefaultBoundaries());
+				IRender render = GraphicsManager.GetRender();
+				render.SetViewRect(windowRect);
+				Project(gameTime, RealX, RealY, render);
+
+				if (!DialoguesAreHidden && DarkenWhenDialogueExists && GetCurrentDialogue() != null)
+				{
+					DrawBox currentDialogue = GetCurrentDialogue();
+
+					foreach (DrawBox d in DrawBoxList)
+						if (currentDialogue != d)
+							d.Draw(gameTime, viewRect);
+
+					var r = GraphicsManager.GetRender();
+					r.Begin();
+					r.Clear(DarkeningMask);
+					r.End();
+
+					currentDialogue.Draw(gameTime, viewRect);
+				}
+				else
+				{
+					foreach (DrawBox d in DrawBoxList)
+					{
+						if (DialoguesAreHidden && dialogues.Contains(d))
+							continue;
+
+						d.Draw(gameTime, viewRect);
+					}
+				}
+
+				foreach (var f in drawDelegates)
+					f(gameTime, viewRect);
+
+				drawDelegates.Clear();
+			}
+		}
+
+		/// <summary>
+		/// Clears the window with the Color field BackgroundColor.
+		/// </summary>
+		/// <param name="gameTime"></param>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		/// <param name="render"></param>
+		public override void Project(GameTime gameTime, int x, int y, IRender render)
+		{
+			render.Begin();
+			render.DrawRect(new Rectangle(x, y, Width, Height), BackgroundColor);
+			render.End();
+		}
+
+		public void AddDrawDelegate(DrawDelegate f)
+		{
+			drawDelegates.Add(f);
+		}
+	}
+}

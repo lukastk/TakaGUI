@@ -1,0 +1,383 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.Xna.Framework;
+using TakaGUI.Data;
+using TakaGUI.Services;
+
+namespace TakaGUI.DrawBoxes
+{
+	public class MenuBar : DrawBox
+	{
+		public List<MenuItem> MenuItems = new List<MenuItem>();
+
+		#region Resources
+		public static string DefaultCategory = "Toolbar";
+
+		public ISprite Top;
+		public ISprite Bottom;
+		public Color DropdownBorder;
+		public Color DropdownBody;
+		public Color HighlightBorder;
+		public Color HighlightBody;
+		public Color SeparatorColor;
+		public Color ElementHighlightColor;
+
+		public MonoFont Font;
+		public Color FontColor;
+		public Color FontHighlightColor;
+
+		#endregion
+
+		public int SelectedMenuItem = -1;
+		public int SelectedMenuElement = -1;
+		public bool ItemIsOpen = false;
+
+		public virtual void Initialize(string category = null, ISkinFile file = null)
+		{
+			if (category == null)
+				category = DefaultCategory;
+			if (file == null)
+				file = DefaultSkinFile;
+
+			//Textures
+			Top = GetTexture(file, category, "Top");
+			Bottom = GetTexture(file, category, "Bottom");
+			DropdownBorder = file.GetColor(category, "DropdownBorder");
+			DropdownBody = file.GetColor(category, "DropdownBody");
+			HighlightBorder = file.GetColor(category, "HighlightBorder");
+			HighlightBody = file.GetColor(category, "HighlightBody");
+			SeparatorColor = file.GetColor(category, "SeparatorColor");
+			ElementHighlightColor = file.GetColor(category, "ElementHighlightColor");
+
+			//Fonts
+			Font = GetMonoFont(file, category, "Font");
+
+			//Colors
+			FontColor = file.GetColor(category, "FontColor");
+			FontHighlightColor = file.GetColor(category, "FontHighlightColor");
+
+			base.BaseInitialize();
+		}
+
+		public override int MinHeight
+		{
+			get
+			{
+				int minHeight = 0;
+
+				if (Font != null)
+					minHeight += Font.CharHeight;
+
+				minHeight += 4; // margin (2) + border * 2 ( 1 * 2)
+
+				minHeight = Math.Max(minHeight, Top.Height + Bottom.Height);
+
+				return minHeight;
+			}
+		}
+
+		public override int Height
+		{
+			get
+			{
+				return base.Height;
+			}
+			set
+			{
+				base.Height = value;
+			}
+		}
+
+		const int menuItemMarginX = 6;
+		const int menuItemMarginY = 3;
+		const int menuElemMarginX = 3;
+		const int menuElemMarginY = 5;
+		const int separatorHeight = 5;
+		const int separatorMargin = 2;
+
+		const int toolbarDropdownMargin = 3;
+
+		int dropdownMenuWidth;
+		int dropdownMenuHeight;
+
+		public override void Idle(GameTime gameTime)
+		{
+			base.Idle(gameTime);
+
+			int oldSelectedMenuItem = SelectedMenuItem;
+			SelectedMenuItem = -1;
+			SelectedMenuElement = -1;
+			int posX = RealX + menuItemMarginX;
+			int count = 0;
+			foreach (var item in MenuItems)
+			{
+				int stringW = Font.MeasureString(item.Name).X;
+
+				if (!ItemIsOpen)
+				{
+					if (IsUnderMouse && MouseInput.IsInRect(new Rectangle(posX, RealY, stringW, Height)))
+					{
+						SelectedMenuItem = count;
+						break;
+					}
+				}
+				else if (ItemIsOpen && oldSelectedMenuItem == count)
+				{
+					if (MouseInput.IsInRect(new Rectangle(posX, RealY, stringW, Height + toolbarDropdownMargin)))
+					{
+						SelectedMenuItem = count;
+					}
+					else if (MouseInput.IsInRect(new Rectangle(
+						posX,
+						RealY + Height + toolbarDropdownMargin,
+						dropdownMenuWidth,
+						dropdownMenuHeight)))
+					{
+						SelectedMenuItem = count;
+					}
+
+					if (SelectedMenuItem == count)
+					{
+						int elemX = posX;
+						int elemY = RealY + Height + toolbarDropdownMargin;
+						int c = 0;
+						foreach (var elem in MenuItems[SelectedMenuItem].Elements)
+						{
+							int elemH;
+							if (elem.Name != null)
+								elemH = Font.MeasureString(elem.Name).Y + menuElemMarginY;
+							else
+								elemH = separatorHeight;
+
+							if (MouseInput.IsInRect(new Rectangle(elemX, elemY, dropdownMenuWidth, elemH)))
+								SelectedMenuElement = c;
+
+							elemY += elemH;
+
+							c += 1;
+						}
+					}
+				}
+
+				posX += stringW + menuItemMarginX;
+				count += 1;
+			}
+
+			if (SelectedMenuElement != -1 && MouseInput.IsClicked(Services.MouseButtons.Left))
+			{
+				var selectedItem = MenuItems[SelectedMenuItem];
+
+				selectedItem.Elements[SelectedMenuElement].Click();
+			}
+
+			if (SelectedMenuItem != -1 && (MouseInput.IsClicked(Services.MouseButtons.Left) ||
+				SelectedMenuItem != oldSelectedMenuItem && ItemIsOpen))
+			{
+				ItemIsOpen = true;
+
+				var selectedItem = MenuItems[SelectedMenuItem];
+
+				dropdownMenuWidth = Font.MeasureString(selectedItem.Name).X + 2; // +2 is for borders
+				dropdownMenuHeight = menuElemMarginY;
+				foreach (var elem in selectedItem.Elements)
+				{
+					int elemW = 0;
+
+					if (!elem.IsSeparator)
+						elemW = menuElemMarginX + Font.MeasureString(elem.Name).X + menuElemMarginX;
+
+					if (elemW > dropdownMenuWidth)
+						dropdownMenuWidth = elemW;
+
+					if (elem.IsSeparator)
+						dropdownMenuHeight += separatorHeight;
+					else
+						dropdownMenuHeight += Font.MeasureString(elem.Name).Y + menuElemMarginY;
+				}
+			}
+			else if (SelectedMenuItem != -1)
+			{
+			}
+			else
+				ItemIsOpen = false;
+		}
+
+		public override void Project(GameTime gameTime, int x, int y, Services.IRender render)
+		{
+			base.Project(gameTime, x, y, render);
+
+			render.Begin();
+
+			render.DrawSprite(Top, new Rectangle(x, y, Width, Height - Bottom.Height), Color.White);
+			render.DrawSprite(Bottom, new Rectangle(x, y + Height - Bottom.Height, Width, Bottom.Height), Color.White);
+
+			int posX = x + menuItemMarginX;
+			int posY = (y + Height / 2 - Font.CharHeight / 2);
+			int count = 0;
+			foreach (var item in MenuItems)
+			{
+				int strinW = Font.MeasureString(item.Name).X;
+
+				if (count != SelectedMenuItem || !ItemIsOpen)
+				{
+					Color color = count == SelectedMenuItem ? FontHighlightColor : FontColor;
+
+					if (count == SelectedMenuItem)
+					{
+						render.DrawHorizontalLine(new Point(posX, y + menuItemMarginY), strinW, HighlightBorder);
+						render.DrawHorizontalLine(new Point(posX, y + Height - menuItemMarginY - 1), strinW, HighlightBorder);
+						render.DrawVerticalLine(new Point(posX, y + menuItemMarginY), Height - menuItemMarginY * 2, HighlightBorder);
+						render.DrawVerticalLine(new Point(posX + strinW, y + menuItemMarginY), Height - menuItemMarginY * 2, HighlightBorder);
+
+						render.DrawRect(new Rectangle(posX + 1, y + menuItemMarginY + 1, strinW - 2, Height - menuItemMarginY * 2 - 3), HighlightBody);
+					}
+
+					Font.DrawString(item.Name, new Point(posX + 1, posY), color, render);
+				}
+
+				posX += strinW + menuItemMarginX;
+
+				count += 1;
+			}
+
+			if (ItemIsOpen)
+				Parent.AddDrawDelegate(DrawMenu);
+
+			render.End();
+		}
+
+		void DrawMenu(GameTime gameTime, ViewRect viewRect)
+		{
+			if (IsClosed || !IsInitialized || !Activated || Hidden)
+				return;
+
+			viewRect.Add(MasterBoundaries);
+			IRender render = GraphicsManager.GetRender();
+
+			int x = RealX;
+			int y = RealY;
+
+			int posX = x + menuItemMarginX;
+			int posY = y + Height / 2 - Font.CharHeight / 2;
+			int count = 0;
+			foreach (var item in MenuItems)
+			{
+				int strinW = Font.MeasureString(item.Name).X;
+
+				if (count == SelectedMenuItem && ItemIsOpen)
+				{
+					render.Begin();
+
+					Color color = count == SelectedMenuItem ? FontHighlightColor : FontColor;
+
+					render.DrawHorizontalLine(new Point(posX, y + menuItemMarginY), strinW, DropdownBorder);
+					render.DrawVerticalLine(new Point(posX, y + menuItemMarginY), Height - menuItemMarginY + toolbarDropdownMargin, DropdownBorder);
+					render.DrawVerticalLine(new Point(posX + strinW, y + menuItemMarginY), Height - menuItemMarginY + toolbarDropdownMargin, DropdownBorder);
+
+					render.DrawRect(new Rectangle(posX + 1, y + menuItemMarginY + 1, strinW - 2, Height - menuItemMarginY + toolbarDropdownMargin - 2), DropdownBody);
+
+					Font.DrawString(item.Name, new Point(posX + 1, posY), color, render);
+
+					//DropdownMenu
+
+					int top = y + Height + toolbarDropdownMargin - 1;
+
+					render.DrawHorizontalLine(new Point(posX + strinW, top), dropdownMenuWidth - strinW, DropdownBorder);
+					render.DrawHorizontalLine(new Point(posX, top + dropdownMenuHeight), dropdownMenuWidth, DropdownBorder);
+					render.DrawVerticalLine(new Point(posX, top), dropdownMenuHeight, DropdownBorder);
+					render.DrawVerticalLine(new Point(posX + dropdownMenuWidth - 1, top), dropdownMenuHeight, DropdownBorder);
+
+					render.DrawRect(new Rectangle(posX + 1, top + 1, dropdownMenuWidth - 3, dropdownMenuHeight - 2), DropdownBody);
+
+					int elemX = posX;
+					int elemY = top + menuElemMarginY;
+					var selectedItem = MenuItems[SelectedMenuItem];
+					int c = 0;
+					foreach (var elem in selectedItem.Elements)
+					{
+						int elemH;
+						if (elem.Name != null)
+							elemH = Font.MeasureString(elem.Name).Y + menuElemMarginY;
+						else
+							elemH = separatorHeight;
+
+						if (c == SelectedMenuElement)
+							render.DrawRect(new Rectangle(elemX + 1, elemY - menuElemMarginY + 2, dropdownMenuWidth - 3, elemH - 2), ElementHighlightColor);
+
+						if (elem.IsSeparator)
+						{
+							render.DrawLine(new Vector2(elemX + separatorMargin, elemY + separatorHeight / 2),
+								new Vector2(elemX + dropdownMenuWidth - separatorMargin, elemY + separatorHeight / 2), SeparatorColor);
+						}
+						else
+						{
+							Font.DrawString(elem.Name, new Point(elemX + menuElemMarginX, elemY), FontColor, render);
+						}
+
+						elemY += elemH;
+
+						c += 1;
+					}
+
+					render.End();
+				}
+
+				posX += strinW + menuItemMarginX;
+				count += 1;
+			}
+
+			render.Reset();
+		}
+
+		public class MenuItem
+		{
+			public string Name;
+
+			public List<MenuElement> Elements = new List<MenuElement>();
+
+			public MenuItem(string name)
+			{
+				Name = name;
+			}
+
+			public class MenuElement
+			{
+				public bool IsSeparator = false;
+
+				public string Name = "";
+
+				public event DefaultEvent Clicked;
+
+				public static MenuElement GetSeparator()
+				{
+					var elem = new MenuElement();
+					elem.IsSeparator = true;
+					elem.Name = null;
+
+					return elem;
+				}
+
+				public MenuElement()
+				{
+				}
+				public MenuElement(string name)
+				{
+					Name = name;
+				}
+				public MenuElement(string name, DefaultEvent clicked)
+				{
+					Name = name;
+					Clicked += clicked;
+				}
+
+				internal void Click()
+				{
+					if (Clicked != null)
+						Clicked(this);
+				}
+			}
+		}
+	}
+}

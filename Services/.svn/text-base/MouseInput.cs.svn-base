@@ -1,0 +1,465 @@
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Graphics;
+using TakaGUI.Cores;
+
+namespace TakaGUI.Services
+{
+	public class MouseInput : GameComponent, IMouseInput
+	{
+		//Services
+		IGraphicsManager graphicsManager;
+
+		public bool LeftButton
+		{
+			get;
+			private set;
+		}
+		public bool MiddleButton
+		{
+			get;
+			private set;
+		}
+		public bool RightButton
+		{
+			get;
+			private set;
+		}
+
+		public List<IPressedButton> PressedButtons
+		{
+			get;
+			private set;
+		}
+		public List<IPressedButton> ReleasedButtons
+		{
+			get;
+			private set;
+		}
+		public List<MouseButtons> ClickedButtons
+		{
+			get;
+			private set;
+		}
+		public List<IDoubleClickedButton> DoubleClickedButtons
+		{
+			get;
+			private set;
+		}
+		private ClickedButton[] LastTimeClicked = new ClickedButton[3];
+		public bool HasScrolled
+		{
+			get;
+			private set;
+		}
+		public bool HasMoved
+		{
+			get;
+			private set;
+		}
+
+		public int ScrollValue
+		{
+			get;
+			private set;
+		}
+		private int _x;
+		private int _y;
+
+		public float SecondsToDoubleClick = 0.2f;
+
+		public MouseInput(Game game)
+			: base(game)
+		{
+			game.Components.Add(this);
+
+			LastTimeClicked[0] = ClickedButton.Negative;
+			LastTimeClicked[1] = ClickedButton.Negative;
+			LastTimeClicked[2] = ClickedButton.Negative;
+
+			PressedButtons = new List<IPressedButton>();
+			ReleasedButtons = new List<IPressedButton>();
+			ClickedButtons = new List<MouseButtons>();
+			DoubleClickedButtons = new List<IDoubleClickedButton>();
+			LastTimeClicked = new ClickedButton[3];
+
+			EnabledChanged += new System.EventHandler<System.EventArgs>(MouseInput_EnabledChanged);
+		}
+
+		void MouseInput_EnabledChanged(object sender, System.EventArgs e)
+		{
+			if (!Enabled)
+				Stop();
+		}
+
+		public int X
+		{
+			get { return _x; }
+			private set
+			{
+				_x = value;
+
+				if (_x < 0)
+					_x = 0;
+				else if (_x > graphicsManager.ScreenWidth)
+					_x = graphicsManager.ScreenWidth;
+			}
+		}
+		public int Y
+		{
+			get { return _y; }
+			private set
+			{
+				_y = value;
+
+				if (_y < 0)
+					_y = 0;
+				else if (_y > graphicsManager.ScreenHeight)
+					_y = graphicsManager.ScreenHeight;
+			}
+		}
+		public int DeltaX
+		{
+			get;
+			private set;
+		}
+		public  int DeltaY
+		{
+			get;
+			private set;
+		}
+
+		protected void Clear()
+		{
+			LeftButton = false;
+			MiddleButton = false;
+			RightButton = false;
+
+			ReleasedButtons.Clear();
+			ClickedButtons.Clear();
+			DoubleClickedButtons.Clear();
+			HasScrolled = false;
+			HasMoved = false;
+		}
+
+		public override void Initialize()
+		{
+			base.Initialize();
+
+			graphicsManager = (IGraphicsManager)Game.Services.GetService(typeof(IGraphicsManager));
+		}
+
+		public override void Update(GameTime gameTime)
+		{
+			base.Update(gameTime);
+
+			Clear();
+
+			MouseState state = Mouse.GetState();
+
+			DeltaX = 0;
+			DeltaY = 0;
+
+			if (X != state.X || Y != state.Y)
+			{
+				HasMoved = true;
+
+				DeltaX = X;
+				DeltaY = Y;
+
+				X = state.X;
+				Y = state.Y;
+
+				DeltaX = X - DeltaX;
+				DeltaY = Y - DeltaY;
+			}
+
+			var pressedButtons = new List<MouseButtons>();
+			if (state.LeftButton == ButtonState.Pressed)
+			{
+				pressedButtons.Add(MouseButtons.Left);
+				LeftButton = true;
+			}
+			if (state.MiddleButton == ButtonState.Pressed)
+			{
+				pressedButtons.Add(MouseButtons.Middle);
+				MiddleButton = true;
+			}
+			if (state.RightButton == ButtonState.Pressed)
+			{
+				pressedButtons.Add(MouseButtons.Right);
+				RightButton = true;
+			}
+
+			foreach (IPressedButton pressedButton in new List<IPressedButton>(PressedButtons))
+			{
+				bool isPressed = false;
+				foreach (MouseButtons pb in pressedButtons)
+					if (pb == pressedButton.Button)
+						isPressed = true;
+
+				if (!isPressed)
+				{
+					PressedButtons.Remove(pressedButton);
+					ReleasedButtons.Add(pressedButton);
+				}
+			}
+
+			foreach (MouseButtons button in pressedButtons)
+			{
+				bool isAlreadyPressed = false;
+
+				foreach (PressedButton pressedButton in PressedButtons)
+					if (button == pressedButton.Button)
+						isAlreadyPressed = true;
+
+				if (!isAlreadyPressed)
+				{
+					PressedButtons.Add(new PressedButton(new Point(X, Y), button, gameTime.TotalGameTime.Seconds));
+					ClickedButtons.Add(button);
+
+					switch (button)
+					{
+						case MouseButtons.Left:
+							if ((LastTimeClicked[0].Time + SecondsToDoubleClick) >= gameTime.TotalGameTime.TotalSeconds)
+							{
+								DoubleClickedButtons.Add(new DoubleClickedButton(LastTimeClicked[0].Position, new Point(X, Y), MouseButtons.Left));
+								LastTimeClicked[0] = ClickedButton.Negative;
+							}
+							else
+								LastTimeClicked[0] = new ClickedButton(new Point(X, Y), gameTime.TotalGameTime.TotalSeconds);
+
+							break;
+						case MouseButtons.Middle:
+							if ((LastTimeClicked[1].Time + SecondsToDoubleClick) >= gameTime.TotalGameTime.TotalSeconds)
+							{
+								DoubleClickedButtons.Add(new DoubleClickedButton(LastTimeClicked[1].Position, new Point(X, Y), MouseButtons.Middle));
+								LastTimeClicked[1] = ClickedButton.Negative;
+							}
+							else
+								LastTimeClicked[1] = new ClickedButton(new Point(X, Y), gameTime.TotalGameTime.TotalSeconds);
+
+							break;
+						case MouseButtons.Right:
+							if ((LastTimeClicked[2].Time + SecondsToDoubleClick) >= gameTime.TotalGameTime.TotalSeconds)
+							{
+								DoubleClickedButtons.Add(new DoubleClickedButton(LastTimeClicked[2].Position, new Point(X, Y), MouseButtons.Right));
+								LastTimeClicked[2] = ClickedButton.Negative;
+							}
+							else
+								LastTimeClicked[2] = new ClickedButton(new Point(X, Y), gameTime.TotalGameTime.TotalSeconds);
+
+							break;
+					}
+				}
+			}
+
+			if (ScrollValue != state.ScrollWheelValue)
+			{
+				HasScrolled = true;
+				ScrollValue = state.ScrollWheelValue;
+			}
+		}
+
+		public void Stop()
+		{
+			Clear();
+			LastTimeClicked[0] = ClickedButton.Negative;
+			LastTimeClicked[1] = ClickedButton.Negative;
+			LastTimeClicked[2] = ClickedButton.Negative;
+		}
+
+		public bool IsClicked(MouseButtons button)
+		{
+			return ClickedButtons.Contains(button);
+		}
+
+		public IDoubleClickedButton IsDoubleClicked(MouseButtons button)
+		{
+			foreach (IDoubleClickedButton doubleClickedButton in DoubleClickedButtons)
+			{
+				if (button == doubleClickedButton.Button)
+					return doubleClickedButton;
+			}
+
+			return DoubleClickedButton.Negative;
+		}
+
+		public Point HasReleased(MouseButtons button)
+		{
+			foreach (PressedButton releasedButton in ReleasedButtons)
+			{
+				if (button == releasedButton.Button)
+					return releasedButton.InitialPos;
+			}
+
+			return new Point(-1, -1);
+		}
+
+		public bool IsPressed(MouseButtons button)
+		{
+			foreach (PressedButton pressedButton in PressedButtons)
+			{
+				if (button == pressedButton.Button)
+					return true;
+			}
+
+			return false;
+		}
+
+		public bool IsInRect(Rectangle rect)
+		{
+			if (X >= rect.Left && X < rect.Right &&
+				Y >= rect.Top && Y < rect.Bottom)
+				return true;
+
+			return false;
+		}
+
+		struct ClickedButton
+		{
+			public static readonly ClickedButton Negative;
+
+			public Point Position;
+			public double Time;
+			public bool IsNegative;
+
+			static ClickedButton()
+			{
+				Negative = new ClickedButton();
+				Negative.IsNegative = true;
+			}
+
+			public ClickedButton(Point position, double time)
+			{
+				Position = position;
+				Time = time;
+				IsNegative = false;
+			}
+		}
+	}
+
+	public interface IMouseInput
+	{
+		bool LeftButton { get; }
+		bool MiddleButton { get; }
+		bool RightButton { get; }
+
+		List<IPressedButton> PressedButtons { get; }
+		List<IPressedButton> ReleasedButtons { get; }
+		List<MouseButtons> ClickedButtons { get; }
+		List<IDoubleClickedButton> DoubleClickedButtons { get; }
+
+		bool HasScrolled { get; }
+		bool HasMoved { get; }
+
+		int ScrollValue { get; }
+
+		int X { get; }
+		int Y { get; }
+		int DeltaX { get; }
+		int DeltaY { get; }
+
+		bool IsClicked(MouseButtons button);
+		IDoubleClickedButton IsDoubleClicked(MouseButtons button);
+		Point HasReleased(MouseButtons button);
+		bool IsPressed(MouseButtons button);
+
+		bool IsInRect(Rectangle rect);
+
+		bool Enabled { get; set; }
+	}
+
+	public enum MouseButtons
+	{
+		Left, Middle, Right, None
+	}
+
+	public struct PressedButton : IPressedButton
+	{
+		public Point InitialPos
+		{
+			get;
+			private set;
+		}
+		public MouseButtons Button
+		{
+			get;
+			private set;
+		}
+		public double TimeClicked
+		{
+			get;
+			private set;
+		}
+
+		public PressedButton(Point initialPos, MouseButtons button, double timeClicked) : this()
+		{
+			InitialPos = initialPos;
+			Button = button;
+			TimeClicked = timeClicked;
+		}
+	}
+
+	public struct DoubleClickedButton : IDoubleClickedButton
+	{
+		public static IDoubleClickedButton Negative
+		{
+			get;
+			private set;
+		}
+
+		public Point Click1
+		{
+			get;
+			private set;
+		}
+		public Point Click2
+		{
+			get;
+			private set;
+		}
+		public MouseButtons Button
+		{
+			get;
+			private set;
+		}
+		public bool IsNegative
+		{
+			get;
+			private set;
+		}
+
+		static DoubleClickedButton()
+		{
+			DoubleClickedButton negative = new DoubleClickedButton();
+			negative.IsNegative = true;
+			Negative = negative;
+		}
+
+		public DoubleClickedButton(Point click1, Point click2, MouseButtons button) : this()
+		{
+			Click1 = click1;
+			Click2 = click2;
+			Button = button;
+
+			IsNegative = false;
+		}
+	}
+
+	public interface IPressedButton
+	{
+		Point InitialPos { get; }
+		MouseButtons Button { get; }
+		double TimeClicked { get; }
+	}
+
+	public interface IDoubleClickedButton
+	{
+		Point Click1 { get; }
+		Point Click2 { get; }
+		MouseButtons Button { get; }
+		bool IsNegative { get; }
+	}
+}

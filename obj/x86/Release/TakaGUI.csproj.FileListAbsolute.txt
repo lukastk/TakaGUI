@@ -1,0 +1,10 @@
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\IronPython.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\IronPython.Modules.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\Microsoft.Dynamic.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\Microsoft.Scripting.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\TakaGUI.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\bin\x86\Release\TakaGUI.pdb
+C:\DEV-MAIN\TakaGUI\TakaGUI\obj\x86\Release\ResolveAssemblyReference.cache
+C:\DEV-MAIN\TakaGUI\TakaGUI\obj\x86\Release\Microsoft.Xna.Framework.RuntimeProfile.txt
+C:\DEV-MAIN\TakaGUI\TakaGUI\obj\x86\Release\TakaGUI.dll
+C:\DEV-MAIN\TakaGUI\TakaGUI\obj\x86\Release\TakaGUI.pdb

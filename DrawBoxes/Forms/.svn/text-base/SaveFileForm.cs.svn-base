@@ -1,0 +1,133 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Collections.ObjectModel;
+using TakaGUI.Data;
+
+namespace TakaGUI.DrawBoxes.Forms
+{
+	public class OpenFileForm : Form
+	{
+		public DialogResult Result = DialogResult.NotFinished;
+		public ReadOnlyCollection<FileInfo> SelectedFiles
+		{
+			get { return selector.SelectedFiles; }
+		}
+		public FileInfo SelectedFile
+		{
+			get
+			{
+				if (SelectedFiles.Count != 0)
+					return SelectedFiles[0];
+
+				return null;
+			}
+		}
+
+		FileSelector selector;
+		ResizableButton okButton;
+		ResizableButton cancelButton;
+
+		bool parentSuspensionOldValue;
+		DrawBox parent;
+
+		public override void Initialize(string category, Data.ISkinFile file)
+		{
+			Initialize("Open File", category, file);
+		}
+		public void Initialize(string title, string category, Data.ISkinFile _file)
+		{
+			file = _file;
+
+			base.Initialize(category, file);
+
+			Title = title;
+		}
+
+		ISkinFile file;
+		public override void AddedToContainer()
+		{
+			const int buttonMinSize = 50;
+
+			selector = new FileSelector();
+			selector.Initialize(file);
+			AddDrawBox(selector);
+			selector.Width = 200;
+			selector.Height = 100;
+
+			cancelButton = new ResizableButton();
+			cancelButton.Initialize(file);
+			AddDrawBox(cancelButton);
+			cancelButton.Title = "Cancel";
+			cancelButton.FitToText();
+			cancelButton.Width = Math.Max(cancelButton.Width, buttonMinSize);
+			cancelButton.X = 0;
+			cancelButton.Y = selector.Height + 3;
+
+			okButton = new ResizableButton();
+			okButton.Initialize(file);
+			AddDrawBox(okButton);
+			okButton.Title = "Ok";
+			okButton.FitToText();
+			okButton.Width = Math.Max(okButton.Width, buttonMinSize);
+			okButton.X = selector.Width - cancelButton.Width;
+			okButton.Y = selector.Height + 3;
+
+			Wrap();
+			
+			selector.Alignment = DrawBoxAlignment.GetFull();
+			okButton.Alignment = DrawBoxAlignment.GetRightBottom();
+			cancelButton.Alignment = DrawBoxAlignment.GetLeftBottom();
+
+			okButton.Click += new DefaultEvent(okButton_Click);
+			cancelButton.Click += new DefaultEvent(cancelButton_Click);
+		}
+
+		public void Show(DrawBox _parent, CloseEvent closeFunction)
+		{
+			parent = _parent;
+			parentSuspensionOldValue = parent.Suspended;
+			parent.Suspended = true;
+			IsClosing += closeFunction;
+		}
+		public static OpenFileForm ShowDialog(DrawBox _parent, CloseEvent closeFunction)
+		{
+			OpenFileForm dialog = new OpenFileForm();
+			dialog.Initialize();
+			((Window)_parent).AddDrawBox(dialog); //Can do this because forms always reside in Windows.
+
+			dialog.Show(_parent, closeFunction);
+
+			return dialog;
+		}
+
+		public override void Update(Microsoft.Xna.Framework.GameTime gameTime)
+		{
+			base.Update(gameTime);
+		}
+
+		protected override void Closing()
+		{
+			base.Closing();
+
+			parent.Suspended = parentSuspensionOldValue;
+		}
+
+		void okButton_Click(object sender)
+		{
+			parent.Suspended = parentSuspensionOldValue;
+
+			Result = DialogResult.OK;
+			Close();
+		}
+		void cancelButton_Click(object sender)
+		{
+			parent.Suspended = parentSuspensionOldValue;
+
+			Result = DialogResult.Cancel;
+			Close();
+		}
+	}
+}

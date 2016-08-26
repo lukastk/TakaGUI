@@ -1,0 +1,794 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.Xna.Framework;
+using TakaGUI.Data;
+using Microsoft.Xna.Framework.Input;
+using System.Collections.ObjectModel;
+using Microsoft.Xna.Framework.Graphics;
+using System.IO;
+using TakaGUI.Services;
+
+namespace TakaGUI
+{
+	public delegate void DefaultEvent(object sender);
+	public delegate void PositionChangedEvent(object sender, Point oldPosition, Point newPosition);
+	public delegate void SizeChangedEvent(object sender, Point oldSize, Point newSize);
+	public delegate void StringChangedEvent(object sender, string oldValue, string newValue);
+	public delegate void IntegerChangedEvent(object sender, int oldValue, int newValue);
+	public delegate void LongChangedEvent(object sender, long oldValue, long newValue);
+	public delegate void DoubleChangedEvent(object sender, double oldValue, double newValue);
+	public delegate void FloatChangedEvent(object sender, float oldValue, float newValue);
+	public delegate void DrawBoxAlignmentChangedEvent(object sender, DrawBoxAlignment oldAlignment, DrawBoxAlignment newAlignment);
+	public delegate void ColorChangedEvent(object sender, Color oldColor, Color newColor);
+	public delegate void BooleanChangedEvent(object sender, bool newValue);
+
+	public delegate void KeyEvent(object sender, Keys key);
+	public delegate void MouseEvent(object sender, MouseButtons button);
+
+	public delegate void CloseEvent(object sender);
+
+	//TODO: some public methods could be replaced with public internal
+	//TODO: Instead of always calculating the size thingie, you can calculate the MinSize from the start.
+
+	/// <summary>
+	/// Summary:
+	///		A component that every drawable object within the game inherits. Setting point standard in this way allows the inherited
+	///		instances to be used in point multitude of contexts, for example: A container button is usually inside point Form, but with this
+	///		system it would be possible to draw point button outside point container.
+	///		
+	///		Points:
+	///			- Allows drawable objects to be used in point multitude of contexts outside the normal ones.
+	///		
+	/// How it works:
+	///		- A DrawBox instance can recieve focus, and therefore input.
+	///		- DrawBox instances are used inside IDrawBoxContainers, the containers handle their input.
+	///		- Child classes of DrawBox are meant to be able to implement IDrawBoxContainer to create
+	///		"sub-containers", for example: Forms, that contain controls.
+	///		- All DrawBox instances are suppoused to reside, either directly or indirectly, within point GameScreen instance.
+	///		- DrawBoxes are suppoused to be able to be independent from their containers, meaning for example that point
+	///		control shouldn't have to be on point container.
+	///		- A DrawBox instance can not be run without IsInitialized being set to true.
+	///		- If the position or size is changed during an update call the new rowValues are stored in point buffer, and for the changes
+	///		to have an effect you have to validate the buffers. But that is handled internally unless bypassed.
+	/// </summary>
+	public abstract class DrawBox
+	{
+		//Services
+		public static IKeyboardInput KeyboardInput;
+		public static IMouseInput MouseInput;
+		public static ICursorManager CursorManager;
+		public static IGraphicsManager GraphicsManager;
+		public static IResourceManager ResourceManager;
+		public static IDebug Debug;
+
+		public static int DrawBoxResourceGroup = 0;
+		public bool CleanUpWhenDisposing = false;
+
+		public static Window DefaultGameScreen;
+		public static ISkinFile DefaultSkinFile;
+
+		#region Data Fields
+		int _X;
+		public int X
+		{
+			get { return _X; }
+			set { _X = value; }
+		}
+		int _Y;
+		public int Y
+		{
+			get { return _Y; }
+			set { _Y = value; }
+		}
+
+		public int RealX
+		{
+			get { return X + Boundaries.X + LocationOrigin.X; }
+		}
+		public int RealY
+		{
+			get { return Y + Boundaries.Y + LocationOrigin.Y; }
+		}
+
+		public virtual int MinWidth
+		{
+			get { return 0; }
+		}
+		public virtual int MaxWidth
+		{
+			get { return -1; }
+		}
+		int _Width;
+		public virtual int Width
+		{
+			get { return _Width; }
+			set
+			{
+				_Width = value;
+
+				if (_Width < MinWidth && MinWidth != -1)
+					_Width = MinWidth;
+				else if (_Width > MaxWidth && MaxWidth != -1)
+					_Width = MaxWidth;
+			}
+		}
+
+		public virtual int MinHeight
+		{
+			get { return 0; }
+		}
+		public virtual int MaxHeight
+		{
+			get { return -1; }
+		}
+		int _Height;
+		public virtual int Height
+		{
+			get { return _Height; }
+			set
+			{
+				_Height = value;
+
+				if (_Height < MinHeight && MinHeight != -1)
+					_Height = MinHeight;
+				else if (_Height > MaxHeight && MaxHeight != -1)
+					_Height = MaxHeight;
+			}
+		}
+
+		public virtual Window Parent
+		{
+			get;
+			set;
+		}
+		public SlotBox Container
+		{
+			get;
+			set;
+		}
+		public SlotBox.SlotHandler Handler;
+
+		DrawBoxAlignment _Alignment;
+		public DrawBoxAlignment Alignment
+		{
+			get { return _Alignment; }
+			set
+			{
+				DrawBoxAlignment oldAlignment = _Alignment;
+				_Alignment = value;
+				
+				ReloadAlignment();
+
+				if (AlignmentChanged != null)
+					AlignmentChanged(this, oldAlignment, _Alignment);
+			}
+		}
+		int alignTopDistance;
+		int alignBottomDistance;
+		int alignLeftDistance;
+		int alignRightDistance;
+
+		#endregion
+
+		#region Control Fields
+		bool _HasToBeInFront = false;
+		public bool HasToBeInFront
+		{
+			get { return _HasToBeInFront; }
+			set
+			{
+				_HasToBeInFront = value;
+
+				if (_HasToBeInFront)
+					_HasToBeAtBack = false;
+			}
+		}
+		bool _HasToBeAtBack = false;
+		public bool HasToBeAtBack
+		{
+			get { return _HasToBeAtBack; }
+			set
+			{
+				_HasToBeAtBack = value;
+
+				if (_HasToBeAtBack)
+					_HasToBeInFront = false;
+			}
+		}
+
+		public virtual bool DrawBoundaries
+		{
+			get { return true; }
+		}
+
+		#endregion
+
+		#region Graphics Fields
+		Color _DrawColor = Color.White;
+		public Color DrawColor
+		{
+			get { return _DrawColor; }
+			set
+			{
+				Color oldValue = _DrawColor;
+				_DrawColor = value;
+
+				if (DrawColorChanged != null)
+					DrawColorChanged(this, oldValue, _DrawColor);
+			}
+		}
+
+		#endregion
+
+		#region Status Fields
+		/// <summary>
+		/// If false, then the instance will not be drawn, and will not be given any input.
+		/// </summary>
+		bool _Activated = true;
+		public bool Activated
+		{
+			get { return _Activated; }
+			set
+			{
+				_Activated = value;
+
+				if (ActivationChanged != null)
+					ActivationChanged(this, _Activated);
+			}
+		}
+
+		public bool IsClosed
+		{
+			get;
+			private set;
+		}
+
+		/// <summary>
+		/// If true, the drawbox will not be drawn.
+		/// </summary>
+		public bool Hidden = false;
+
+		public bool IsFirstToDraw
+		{
+			get { return Container.IsChildFirstToDraw(this); }
+		}
+		public bool IsLastToDraw
+		{
+			get { return Container.IsChildLastToDraw(this); }
+		}
+
+		#endregion
+
+		#region Input Fields
+		public virtual bool HasFocus
+		{
+			get
+			{
+				return Container.TestDrawBoxWithFocus(this);
+			}
+		}
+		public bool Suspended
+		{
+			get;
+			set;
+		}
+
+		public virtual bool IsUnderMouse
+		{
+			get
+			{
+				return Container.TestDrawBoxUnderMouse(this);
+			}
+		}
+
+		#endregion
+
+		#region Events
+		public event PositionChangedEvent PositionChanged;
+		public event SizeChangedEvent SizeChanged;
+
+		public event DrawBoxAlignmentChangedEvent AlignmentChanged;
+
+		public event ColorChangedEvent DrawColorChanged;
+
+		public event BooleanChangedEvent ActivationChanged;
+
+		bool oldFocus;
+		public event BooleanChangedEvent FocusChanged;
+		bool oldIsUnderMouse;
+		public event BooleanChangedEvent UnderMouseChanged;
+
+		public event DefaultEvent DrawBoxHasFocus;
+		public event DefaultEvent DrawBoxIsUnderMouse;
+
+		public event KeyEvent KeyClicked;
+		public event KeyEvent KeyPressed;
+		public event KeyEvent KeyReleased;
+
+		public event MouseEvent MouseClicked;
+		public event MouseEvent MouseDoubleClicked;
+		public event MouseEvent MousePressed;
+		public event MouseEvent MouseReleased;
+
+		public event CloseEvent IsClosing;
+
+		#endregion
+
+		#region Data Methods
+		internal virtual bool IsValidWidth(int newWidth)
+		{
+			int oldWidth = Width;
+			Width = newWidth;
+
+			if (newWidth != Width)
+			{
+				Width = oldWidth;
+				return false;
+			}
+
+			Width = oldWidth;
+
+			return true;
+		} //Needs to be virtual so that SlotBox can override.
+		internal virtual bool IsValidHeight(int newHeight)
+		{
+			int oldHeight = Height;
+			Height = newHeight;
+
+			if (newHeight != Height)
+			{
+				Height = oldHeight;
+				return false;
+			}
+
+			Height = oldHeight;
+
+			return true;
+		}
+		internal bool IsContainerWidthValid(int newContainerWidth)
+		{
+			int newWidth = Width;
+
+			if (Alignment.Left)
+			{
+				if (Alignment.Right)
+					newWidth = newContainerWidth - alignRightDistance - alignLeftDistance;
+			}
+
+			if (newWidth != Width)
+				return IsValidWidth(newWidth);
+			return true;
+		}
+		internal bool IsContainerHeightValid(int newContainerHeight)
+		{
+			int newHeight = Height;
+
+			if (Alignment.Top)
+			{
+				if (Alignment.Bottom)
+					newHeight = newContainerHeight - alignBottomDistance - alignTopDistance;
+			}
+
+			if (newHeight != Height)
+				return IsValidHeight(newHeight);
+			return true;
+		}
+
+		public void ReloadAlignment()
+		{
+			Container.SetChildParameters();
+
+			if (Alignment.Top)
+				alignTopDistance = Y;
+
+			if (Alignment.Left)
+				alignLeftDistance = X;
+
+			if (Alignment.Bottom)
+				alignBottomDistance = Boundaries.Height - (Y + Height);
+
+			if (Alignment.Right)
+				alignRightDistance = Boundaries.Width - (X + Width);
+		}
+		/// <summary>
+		/// Updates the alignment with the container. It is supposed to be called after the container size has been validated.
+		/// </summary>
+		public void UpdateAlignment()
+		{
+			if (Alignment.Top)
+			{
+				Y = alignTopDistance;
+
+				if (Alignment.Bottom)
+					Height = Boundaries.Height - alignBottomDistance - Y;
+			}
+			else if (Alignment.Bottom)
+				Y = Boundaries.Height - alignBottomDistance - Height;
+
+			if (Alignment.Left)
+			{
+				X = alignLeftDistance;
+
+				if (Alignment.Right)
+					Width = Boundaries.Width - alignRightDistance - X;
+			}
+			else if (Alignment.Right)
+				X = Boundaries.Width - alignRightDistance - Width;
+		}
+
+		protected ISprite GetTexture(ISkinFile file, string category, string name)
+		{
+			ISprite resource = file.GetSprite(DrawBoxResourceGroup, category, name);
+			return resource;
+		}
+		protected MonoFont GetMonoFont(ISkinFile file, string category, string name)
+		{
+			MonoFont resource = file.GetFont(DrawBoxResourceGroup, category, name);
+			return resource;
+		}
+
+		public Origin LocationOrigin;
+		public ViewRect Boundaries;
+		/// <summary>
+		/// The boundaries are the bounds of the drawbox, the master-boundaries are the boundaries of the
+		/// container (which is also point drawbox).
+		/// </summary>
+		public ViewRect MasterBoundaries;
+
+		#endregion
+
+		#region Control Methods
+		public void AddToDefaultScreen()
+		{
+			DefaultGameScreen.AddDrawBox(this);
+		}
+
+		public void SetPosition(int x, int y)
+		{
+			X = x;
+			Y = y;
+		}
+
+		public void SetSize(int width, int height)
+		{
+			Width = width;
+			Height = height;
+		}
+
+		public virtual void FillWidth()
+		{
+			X = 0;
+			Width = Boundaries.Width;
+		}
+		public virtual void FillHeight()
+		{
+			Y = 0;
+			Height = Boundaries.Height;
+		}
+		public virtual void Fill()
+		{
+			FillWidth();
+			FillHeight();
+		}
+
+		#endregion
+
+		public static void InitializeServices(IServiceProvider serviceProvider)
+		{
+			KeyboardInput = (IKeyboardInput)serviceProvider.GetService(typeof(IKeyboardInput));
+			MouseInput = (IMouseInput)serviceProvider.GetService(typeof(IMouseInput));
+			CursorManager = (ICursorManager)serviceProvider.GetService(typeof(ICursorManager));
+			GraphicsManager = (IGraphicsManager)serviceProvider.GetService(typeof(IGraphicsManager));
+			ResourceManager = (IResourceManager)serviceProvider.GetService(typeof(IResourceManager));
+			Debug = (IDebug)serviceProvider.GetService(typeof(IDebug));
+		}
+
+		public bool IsMouseInRect(Rectangle rect)
+		{
+			return MouseInput.X >= rect.X && MouseInput.X < rect.X + rect.Width && MouseInput.Y >= rect.Y && MouseInput.Y < rect.Y + rect.Height;
+		}
+
+		protected virtual void Closing()
+		{
+		}
+		public virtual void Close()
+		{
+			if (IsClosing != null)
+				IsClosing(this);
+
+			Closing();
+
+			IsClosed = true;
+
+			Container.RequestRemoval(this);
+		}
+
+		public virtual void UpdateSize()
+		{
+			UpdateAlignment();
+		}
+
+		public virtual void AddedToContainer()
+		{
+		}
+
+		public bool IsInitialized
+		{
+			get;
+			private set;
+		}
+
+		protected void BaseInitialize()
+		{
+			Width = Width;
+			Height = Height;
+
+			oldPos.X = X;
+			oldPos.Y = Y;
+			oldSize.X = Width;
+			oldSize.Y = Height;
+
+			IsInitialized = true;
+		}
+
+		protected Point oldPos;
+		protected Point oldSize;
+		public virtual void Update(GameTime gameTime)
+		{
+			if (IsClosed || !IsInitialized || !Activated)
+				return;
+
+			if (HasToBeInFront)
+			{
+				if (!IsLastToDraw)
+					Container.PutChildInFront(this);
+			}
+			else if (HasToBeAtBack)
+			{
+				if (!IsFirstToDraw)
+					Container.PutChildInBack(this);
+			}
+
+			Width = Width;
+			Height = Height;
+
+			UpdateAlignment();
+			
+			#region DefaultEvent Handling
+			if (PositionChanged != null && (oldPos.X != X || oldPos.Y != Y))
+				PositionChanged(this, new Point(oldPos.X, oldPos.Y), new Point(X, Y));
+
+			if (SizeChanged != null && (oldSize.X != Width || oldSize.Y != Height))
+				SizeChanged(this, new Point(oldSize.X, oldSize.Y), new Point(Width, Height));
+
+			if (HasFocus && DrawBoxHasFocus != null)
+				DrawBoxHasFocus(this);
+
+			if (IsUnderMouse && DrawBoxIsUnderMouse != null)
+				DrawBoxIsUnderMouse(this);
+
+			if (oldFocus != HasFocus && FocusChanged != null)
+				FocusChanged(this, HasFocus);
+
+			if (oldIsUnderMouse != IsUnderMouse && UnderMouseChanged != null)
+				UnderMouseChanged(this, IsUnderMouse);
+
+			oldFocus = HasFocus;
+			oldIsUnderMouse = IsUnderMouse;
+
+			#region Keyboard
+			if (KeyboardInput.ClickedKeys.Count != 0)
+				if (KeyClicked != null)
+					foreach (Keys key in KeyboardInput.ClickedKeys)
+						KeyClicked(this, key);
+
+			if (KeyboardInput.PressedKeys.Count != 0)
+				if (KeyPressed != null)
+					foreach (PressedKey key in KeyboardInput.PressedKeys)
+						KeyPressed(this, key.Key);
+
+			if (KeyboardInput.ReleasedKeys.Count != 0)
+				if (KeyReleased != null)
+					foreach (Keys key in KeyboardInput.ReleasedKeys)
+						KeyReleased(this, key);
+
+			#endregion
+
+			#region Mouse
+			if (MouseInput.ClickedButtons.Count != 0)
+				if (MouseClicked != null)
+					foreach (MouseButtons button in MouseInput.ClickedButtons)
+						MouseClicked(this, button);
+
+			if (MouseInput.DoubleClickedButtons.Count != 0)
+				if (MouseDoubleClicked != null)
+					foreach (DoubleClickedButton button in MouseInput.DoubleClickedButtons)
+						MouseDoubleClicked(this, button.Button);
+
+			if (MouseInput.PressedButtons.Count != 0)
+				if (MousePressed != null)
+					foreach (PressedButton button in MouseInput.PressedButtons)
+						MousePressed(this, button.Button);
+
+			if (MouseInput.ReleasedButtons.Count != 0)
+				if (MouseReleased != null)
+					foreach (PressedButton button in MouseInput.ReleasedButtons)
+						MouseReleased(this, button.Button);
+
+			#endregion
+
+			#endregion
+
+			oldPos = new Point(X, Y);
+			oldSize = new Point(Width, Height);
+
+			Idle(gameTime);
+		}
+
+		//TODO: FIND BETTER NAME
+		public virtual void Idle(GameTime gameTime)
+		{
+		}
+
+		public virtual void Draw(GameTime gameTime, ViewRect viewRect)
+		{
+			if (IsClosed || !IsInitialized || !Activated || Hidden)
+				return;
+
+			viewRect.Add(MasterBoundaries);
+			viewRect.Add(Boundaries);
+			viewRect.Add(new ViewRect(Container.RealX, Container.RealY, Container.Width, Container.Height));
+			viewRect.Add(new ViewRect(RealX, RealY, Width, Height));
+			IRender render = GraphicsManager.GetRender();
+
+			if (DrawBoundaries)
+				render.SetViewRect(viewRect);
+
+			Project(gameTime, RealX, RealY, render);
+
+			render.Reset();
+		}
+
+		public virtual void Project(GameTime gameTime, int x, int y, IRender render) { }
+
+		public virtual bool CheckFocus()
+		{
+			//TODO: CHECK DRAW ORDER
+			
+			if (Suspended)
+				return false;
+
+			if (!MouseInput.IsClicked(MouseButtons.Left))
+				return false;
+			
+			return CheckMouseOver();
+		}
+
+		public virtual void FocusGranted() { }
+
+		public virtual bool CheckMouseOver()
+		{
+			if (!IsInitialized || !Activated || Hidden)
+				return false;
+
+			if (MouseInput.X >= RealX && MouseInput.X <= RealX + Width &&
+				MouseInput.Y >= RealY && MouseInput.Y <= RealY + Height)
+			{
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	public struct Origin
+	{
+		public int X;
+		public int Y;
+
+		public Origin(int x, int y)
+		{
+			X = x;
+			Y = y;
+		}
+	}
+
+	public struct Size
+	{
+		public int Width;
+		public int Height;
+
+		public Size(int width, int height)
+		{
+			Width = width;
+			Height = height;
+		}
+	}
+
+	public struct DrawBoxAlignment
+	{
+		public bool Top;
+		public bool Bottom;
+		public bool Left;
+		public bool Right;
+
+		public DrawBoxAlignment(bool top, bool bottom, bool left, bool right)
+		{
+			Top = top;
+			Bottom = bottom;
+			Left = left;
+			Right = right;
+		}
+
+		public static DrawBoxAlignment GetEmpty()
+		{
+			return new DrawBoxAlignment(false, false, false, false);
+		}
+		public static DrawBoxAlignment GetFull()
+		{
+			return new DrawBoxAlignment(true, true, true, true);
+		}
+
+		public static DrawBoxAlignment GetLeftTop()
+		{
+			return new DrawBoxAlignment(true, false, true, false);
+		}
+		public static DrawBoxAlignment GetRightTop()
+		{
+			return new DrawBoxAlignment(true, false, false, true);
+		}
+		public static DrawBoxAlignment GetLeftBottom()
+		{
+			return new DrawBoxAlignment(false, true, true, false);
+		}
+		public static DrawBoxAlignment GetRightBottom()
+		{
+			return new DrawBoxAlignment(false, true, false, true);
+		}
+
+		public static DrawBoxAlignment GetTopBottom()
+		{
+			return new DrawBoxAlignment(true, true, false, false);
+		}
+		public static DrawBoxAlignment GetLeftRight()
+		{
+			return new DrawBoxAlignment(false, false, true, true);
+		}
+
+		public static DrawBoxAlignment GetLeftRightTop()
+		{
+			return new DrawBoxAlignment(true, false, true, true);
+		}
+		public static DrawBoxAlignment GetLeftRightBottom()
+		{
+			return new DrawBoxAlignment(false, true, true, true);
+		}
+		public static DrawBoxAlignment GetRightTopBottom()
+		{
+			return new DrawBoxAlignment(true, true, false, true);
+		}
+		public static DrawBoxAlignment GetLeftTopBottom()
+		{
+			return new DrawBoxAlignment(true, true, true, false);
+		}
+
+		public static DrawBoxAlignment GetTop()
+		{
+			return new DrawBoxAlignment(true, false, false, false);
+		}
+		public static DrawBoxAlignment GetBottom()
+		{
+			return new DrawBoxAlignment(false, true, false, false);
+		}
+		public static DrawBoxAlignment GetLeft()
+		{
+			return new DrawBoxAlignment(false, false, true, false);
+		}
+		public static DrawBoxAlignment GetRight()
+		{
+			return new DrawBoxAlignment(false, false, false, true);
+		}
+	}
+}

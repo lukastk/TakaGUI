@@ -1,0 +1,79 @@
+﻿using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Xna.Framework;
+
+namespace TakaGUI.Cores
+{
+	public static class StateManager
+	{
+		static readonly List<State> States = new List<State>();
+
+		static State currentState;
+
+		public static void Push(State state, GameTime gameTime)
+		{
+			currentState = state;
+
+			States.Add(state);
+			state.Update(gameTime, StatePurpose.Initiate);
+		}
+
+		public static void Pop(GameTime gameTime)
+		{
+			currentState.Update(gameTime, StatePurpose.Stop);
+			States.RemoveAt(States.Count - 1);
+
+			if (States.Count != 0)
+				currentState = States.Last();
+			else
+				currentState = null;
+		}
+
+		public static void PopAll(GameTime gameTime)
+		{
+			for (int i = 0; i < States.Count; i++)
+				Pop(gameTime);
+		}
+
+		public static void Update(GameTime gameTime)
+		{
+			currentState.Update(gameTime, StatePurpose.Work);
+		}
+	}
+
+	public class State
+	{
+		public virtual void Update(GameTime gameTime, StatePurpose purpose)
+		{
+			switch (purpose)
+			{
+				case StatePurpose.Initiate:
+					Initialize(gameTime);
+					break;
+				case StatePurpose.Stop:
+					Stop(gameTime);
+					break;
+				case StatePurpose.Work:
+					Work(gameTime);
+					break;
+			}
+		}
+
+		public virtual void Initialize(GameTime gameTime)
+		{
+		}
+
+		public virtual void Stop(GameTime gameTime)
+		{
+		}
+
+		public virtual void Work(GameTime gameTime)
+		{
+		}
+	}
+
+	public enum StatePurpose
+	{
+		Initiate, Stop, Work
+	}
+}

@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/14/trunk/TakaGUI
+END
+TakaGUI.sln
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/3/trunk/TakaGUI/TakaGUI.sln
+END
+Microsoft.Scripting.dll
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/15/trunk/TakaGUI/Microsoft.Scripting.dll
+END
+Push.cs
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/3/trunk/TakaGUI/Push.cs
+END
+IronPython.dll
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/15/trunk/TakaGUI/IronPython.dll
+END
+TakaGUI.csproj
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/23/trunk/TakaGUI/TakaGUI.csproj
+END
+Timer.cs
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/3/trunk/TakaGUI/Timer.cs
+END
+content_and_skins.rar
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/22/trunk/TakaGUI/content_and_skins.rar
+END
+IronPython.Modules.dll
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/15/trunk/TakaGUI/IronPython.Modules.dll
+END
+SlotBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/23/trunk/TakaGUI/SlotBox.cs
+END
+SingleSlotBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/3/trunk/TakaGUI/SingleSlotBox.cs
+END
+Microsoft.Dynamic.dll
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/15/trunk/TakaGUI/Microsoft.Dynamic.dll
+END
+SpriteSheet.cs
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/3/trunk/TakaGUI/SpriteSheet.cs
+END
+MonoFont.cs
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/14/trunk/TakaGUI/MonoFont.cs
+END
+DrawBox.cs
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/23/trunk/TakaGUI/DrawBox.cs
+END
+Window.cs
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/20/trunk/TakaGUI/Window.cs
+END
